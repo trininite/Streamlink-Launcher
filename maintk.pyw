@@ -1,5 +1,7 @@
 import tkinter as tk
 import subprocess as simp
+import os
+from sys import platform
 
 
 class App:
@@ -12,6 +14,11 @@ class App:
         self.fileCacheMS = tk.StringVar()
 
         settingsIconDark = tk.PhotoImage(file = "settingsDarkmode.png")
+
+        if platform == "linux" or platform == "linux2":
+            self.OS = "linux"
+        elif platform == "win32":
+            self.OS = "win"
 
         self.root = root
         mainFrame = tk.Frame(root)
@@ -141,13 +148,25 @@ class App:
         
 
     def runSubroutine(self, inn):
-        try:
-            self.top.destroy()
-        except:
-            pass
-        cmdline = ["streamlinkLauncher.bat", inn, str(self.fileCacheMS.get()), str(self.netCacheMS.get())]
-        simp.Popen(cmdline, cwd="./")
-        quit()
+        if self.OS == "linux":
+            try:
+                self.top.destroy()
+                self.top2.destroy()
+            except:
+                pass
+            bashScriptPath = os.getcwd() + '/' + 'streamlinkLauncher.sh'
+            cmdline = [bashScriptPath, inn, str(self.fileCacheMS.get()), str(self.netCacheMS.get())]
+            simp.Popen(cmdline, cwd="./")
+
+        elif self.OS == "win":
+            try:
+                self.top.destroy()
+                self.top2.destroy()
+            except:
+                pass
+            cmdline = ["streamlinkLauncher.bat", inn, str(self.fileCacheMS.get()), str(self.netCacheMS.get())]
+            simp.Popen(cmdline, cwd="./")
+            quit()
 
     def updateLayout(self, inputs):
         col = 0
