@@ -1,0 +1,7 @@
+{
+    "streamers":["forsen,xqc,nymn,pokelawls,velcuz"],
+
+    "net_cache_ms": 2000,
+
+    "file_cache_ms": 2000
+}
