@@ -1,4 +1,4 @@
 **GUI launcher for streamlink cli, 
-written in python-tk and dos and bash**
+written in python-tk**
 
 ![](/docs/1.gif)
