@@ -2,6 +2,7 @@ import tkinter as tk
 import subprocess as simp
 import os
 from sys import platform
+import json
 
 
 class App:
@@ -9,62 +10,74 @@ class App:
 
         root.title("Streamlink Launcher")
         
-        self.customVar = tk.StringVar()
-        self.netCacheMS = tk.StringVar()
-        self.fileCacheMS = tk.StringVar()
+        self.custom_var = tk.StringVar()
 
-        settingsIconDark = tk.PhotoImage(file = "settingsDarkmode.png")
+        cache_list = self.get_cache()
+        self.net_cache_ms = cache_list[0]
+        self.file_cache_ms = cache_list[1]
+        del(cache_list)
 
-        if platform == "linux" or platform == "linux2":
-            self.OS = "linux"
-        elif platform == "win32":
-            self.OS = "win"
+
+        self.OS = self.get_os()
 
         self.root = root
+
         mainFrame = tk.Frame(root)
 
-        self.forsen = tk.Button(
-            mainFrame, text="forsen", 
-            command=lambda:self.runSubroutine("forsen")
-        )
+        streamers = self.get_streamers()
 
-        self.xqc = tk.Button(
-            mainFrame, 
-            text="xqc", 
-            command=lambda:self.runSubroutine("xqc")
-        )
-    
-        self.poke = tk.Button(
-            mainFrame, 
-            text="pokelawls",
-            command=lambda:self.runSubroutine("poke")
-        )
+        streamer_buttons = []
+        for i in range(len(streamers)):
+            button = tk.Button(
+                mainFrame,
+                text=streamers[i], 
+                command=lambda:self.sub_routine(streamers[i])
+            )
+            streamer_buttons.append(button)
 
-        self.nymn = tk.Button(
-            mainFrame, 
-            text="nymn", 
-            command=lambda:self.runSubroutine("nymn")
-        )
+        #for some reason, the button takes the last streamer in the config as its command argument
+        #these lines re-assign the command value and it seems to work (fingers crossed)
+        tmp_int = 0
+        for streamer in streamer_buttons:
+            streamer.configure(command=lambda:self.sub_routine(streamers[tmp_int]))
+        del(tmp_int)
             
         self.custom = tk.Button(
             mainFrame, 
             text="Custom", 
-            command=self.customInput
+            command=self.custom_input
         )
 
-        self.settingsB = tk.Button(
-            mainFrame, 
-            image=settingsIconDark,
-            command=self.settings
-        )
-        self.settingsB.photo = settingsIconDark
-        
         mainFrame.grid(row=0, column=0)
 
-        inputs = (self.forsen, self.xqc, self.poke, self.nymn, self.custom, self.settingsB)
-        self.updateLayout(inputs)
+        inputs = streamer_buttons + [self.custom]
+        self.update_layout(inputs)
 
-    def customInput(self):
+
+    def get_os(self):
+        if platform == "linux" or platform == "linux2":
+            return "linux"
+        elif platform == "win32":
+            return "win"
+
+
+    def get_cache(self):
+        config = json.load(open("conf.json"))
+        
+        return [config["net_cache_ms"], config["file_cache_ms"]]
+
+
+    def get_streamers(self):
+        config = json.load(open("conf.json"))
+
+        streamers = []
+        for i in range(len(config["streamers"][0].split(","))):
+            streamers.append(config["streamers"][0].split(",")[i].split(" ")[0])
+        
+        return streamers
+
+
+    def custom_input(self):
         self.top = tk.Toplevel(self.root)
 
         self.top.title("Custom Input")
@@ -74,7 +87,7 @@ class App:
         
         self.userIn = tk.Entry(
             self.topFrame, 
-            textvariable=self.customVar, 
+            textvariable=self.custom_var, 
             bg="#333333", 
             fg="#ffffff", 
             insertbackground="#ffffff", 
@@ -86,68 +99,16 @@ class App:
             text="Enter", 
             bg="#333333", 
             fg="#ffffff", 
-            command=lambda:self.runSubroutine(self.customVar.get())
+            command=lambda:self.sub_routine_input(self.custom_var.get())
         )
 
 
         self.topFrame.grid(row=0, column=0)
         self.userIn.grid(row=0, column=0)
         self.enter.grid(row=0, column=1)
- 
         
 
-    def settings(self):
-        self.top2 = tk.Toplevel(self.root)
-
-        self.topFrame2 = tk.Frame(self.top2)
-        self.topFrame2.configure(background="#222222")
-
-        self.netCacheLabel = tk.Label(
-            self.topFrame2,
-            text="Network Cache",
-            bg="#333333",
-            fg="#ffffff",
-            padx=2,
-            relief=tk.SUNKEN
-        )
-
-        self.netCacheEntry = tk.Entry(
-            self.topFrame2, 
-            textvariable=self.netCacheMS, 
-            bg="#333333", 
-            fg="#ffffff", 
-            insertbackground="#ffffff", 
-            width=30
-        )
-
-        self.fileCacheLabel = tk.Label(
-            self.topFrame2,
-            text="Local Cache",
-            bg="#333333",
-            fg="#ffffff",
-            relief=tk.SUNKEN
-        )
-
-        self.fileCacheEntry = tk.Entry(
-            self.topFrame2, 
-            textvariable=self.fileCacheMS, 
-            bg="#333333", 
-            fg="#ffffff", 
-            insertbackground="#ffffff", 
-            width=30
-        )
-
-
-        self.netCacheLabel.grid(row=0, column=0)
-        self.netCacheEntry.grid(row=0, column=1)
-        self.fileCacheLabel.grid(row=1, column=0, sticky="EW")
-        self.fileCacheEntry.grid(row=1, column=1)
-
-        self.topFrame2.grid(row=0, column=0)
-
-        
-
-    def runSubroutine(self, inn):
+    def sub_routine(self, sub_routine_input):
         if self.OS == "linux":
             try:
                 self.top.destroy()
@@ -155,7 +116,7 @@ class App:
             except:
                 pass
             bashScriptPath = os.getcwd() + '/' + 'streamlinkLauncher.sh'
-            cmdline = [bashScriptPath, inn, str(self.fileCacheMS.get()), str(self.netCacheMS.get())]
+            cmdline = [bashScriptPath, sub_routine_input, str(self.file_cache_ms), str(self.net_cache_ms)]
             simp.Popen(cmdline, cwd="./")
 
         elif self.OS == "win":
@@ -164,16 +125,16 @@ class App:
                 self.top2.destroy()
             except:
                 pass
-            cmdline = ["streamlinkLauncher.bat", inn, str(self.fileCacheMS.get()), str(self.netCacheMS.get())]
+            cmdline = ["streamlinkLauncher.bat", sub_routine_input, str(self.file_cache_ms), str(self.net_cache_ms)]
             simp.Popen(cmdline, cwd="./")
             quit()
 
-    def updateLayout(self, inputs):
-        col = 0
-        for i in inputs:
-            i.config(background="#222222", fg="#ffffff", padx=5, pady=5)
-            i.grid(row=0, column=col, sticky="NS")
-            col = col + 1
+
+    def update_layout(self, widgets):
+        for i in range(len(widgets)):
+            widgets[i].config(background="#222222", fg="#ffffff", padx=5, pady=5)
+            widgets[i].grid(row=0, column=i, sticky="NS")
+
 
 def main():
     root = tk.Tk()
@@ -181,6 +142,4 @@ def main():
     root.mainloop()
 
 
-
-if __name__ == "__main__":
-    main()
+main() if __name__ == "__main__" else None
